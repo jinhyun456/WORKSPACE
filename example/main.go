@@ -11,4 +11,4 @@ func main() {
 
 	fmt.Println(a + b)
 }
-000
+0000

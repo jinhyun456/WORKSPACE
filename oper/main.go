@@ -37,3 +37,5 @@ func main() {
 	//나머지 연산
 	fmt.Println("a % b =", a%b)
 }
+
+//
