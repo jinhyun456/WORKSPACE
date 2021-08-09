@@ -31,18 +31,23 @@ func (a *Account) Balance() int {
 	return balance
 }
 
-var accounts []*Account //slice 배열 (메모리 보호대상) Mutex
+var accounts []*Account    //slice 배열 (메모리 보호대상) Mutex
+var globalLock *sync.Mutex //글로벌 락을 만들어 정교하게 보호한다.
 
 func Transfer(sender, receiver int, money int) { //송금자, 받는자, 송금액
-	accounts[sender].Widthdraw(money)
-	accounts[receiver].Deposit(money)
+	globalLock.Lock()
+	accounts[sender].Widthdraw(money) // 어카운트 배열에서 돈을 빼고
+	accounts[receiver].Deposit(money) //리시버에게 송금
+	globalLock.Unlock()
 }
 
-func GetTotalBalance() int { //전체 잔액량
+func GetTotalBalance() int {
+	globalLock.Lock()
 	total := 0
 	for i := 0; i < len(accounts); i++ {
 		total += accounts[i].Balance()
 	}
+	globalLock.Unlock()
 	return total
 }
 
@@ -50,8 +55,8 @@ func RandomTransfer() { //랜덤함수 레퍼런스
 	var sender, balance int
 	for {
 		sender = rand.Intn(len(accounts))
-		balance = accounts[sender].Balance()
-		if balance > 0 { //샌더 잔액여부 확인
+		balance = accounts[sender].Balance() //샌더 잔액여부 확인
+		if balance > 0 {
 			break //샌더 잔액이 있으면 멈춘다
 		}
 	}
@@ -79,13 +84,14 @@ func PrintTotalBalance() {
 }
 
 func main() {
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 20; i++ { //20개 어카운트 배열 1000 지정
 		accounts = append(accounts, &Account{balance: 1000, mutex: &sync.Mutex{}})
 	}
+	globalLock = &sync.Mutex{} //메인함수에 글로벌 락을 만들고 주소를 가진다.
 
 	PrintTotalBalance()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 10; i++ { //쓰레드개수를 (1개로 하면 일정한 카운트를 유지한다)
 		go GoTransfer()
 	}
 
@@ -94,5 +100,3 @@ func main() {
 		time.Sleep(100 * time.Millisecond)
 	}
 }
-
-ㅏ
